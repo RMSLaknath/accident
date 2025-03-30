@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "220917733221",
+    "project_id": "calm-photon-433216-k6",
+    "storage_bucket": "calm-photon-433216-k6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:220917733221:android:f2df8eb34dddd72d37b38c",
+        "android_client_info": {
+          "package_name": "com.example.accident"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "220917733221-vrblor8j6e6gcs0uo9fae9sl4neggg38.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.accident",
+            "certificate_hash": "f30074f0c40a11b71cb124384f706ad11d899a1a"
+          }
+        },
+        {
+          "client_id": "220917733221-g03kahl9k6obd5hios466q64mgjqtfja.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA3shfWx1Xcx2jmzvQARM_95ORZnHeMGJA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "220917733221-g03kahl9k6obd5hios466q64mgjqtfja.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "220917733221-g1qkf3cpsl85vp8q64t61d8hj0se0rdl.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.accident"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:220917733221:android:0f56224f635d8c3137b38c",
+        "android_client_info": {
+          "package_name": "com.example.protect360"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "220917733221-g03kahl9k6obd5hios466q64mgjqtfja.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA3shfWx1Xcx2jmzvQARM_95ORZnHeMGJA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "220917733221-g03kahl9k6obd5hios466q64mgjqtfja.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "220917733221-g1qkf3cpsl85vp8q64t61d8hj0se0rdl.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.accident"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
