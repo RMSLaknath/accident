@@ -20,6 +20,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _isLoading = false;
   final bool _obscurePassword = true;
   bool _acceptedTerms = false;
+  bool _showFullTerms = false;
 
   Future<void> _handleSignup() async {
     if (!_formKey.currentState!.validate()) return;
@@ -224,6 +225,12 @@ class _SignupScreenState extends State<SignupScreen> {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your name';
                               }
+                              if (value.trim().length < 2) {
+                                return 'Name must be at least 2 characters';
+                              }
+                              if (!RegExp(r'^[a-zA-Z ]+$').hasMatch(value)) {
+                                return 'Name should only contain letters';
+                              }
                               return null;
                             },
                           ),
@@ -297,16 +304,81 @@ class _SignupScreenState extends State<SignupScreen> {
                             onChanged: (value) {
                               setState(() => _acceptedTerms = value ?? false);
                             },
-                            title: Text(
-                              'I accept the Terms and Conditions',
-                              style: TextStyle(
-                                color: isDark ? Colors.white70 : Colors.grey[700],
-                                fontSize: 14,
-                              ),
-                            ),
+                            title: const Text('I accept the Terms and Conditions'),
                             controlAffinity: ListTileControlAffinity.leading,
                             contentPadding: EdgeInsets.zero,
+                            subtitle: !_acceptedTerms
+                                ? const Text(
+                                    'You must accept the terms to proceed',
+                                    style: TextStyle(color: Colors.red, fontSize: 12),
+                                  )
+                                : null,
                           ),
+                          const SizedBox(height: 10),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _showFullTerms = !_showFullTerms;
+                              });
+                            },
+                            child: Text(
+                              _showFullTerms ? 'Hide Terms and Conditions' : 'View Terms and Conditions',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.blue,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                          if (_showFullTerms)
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Terms and Conditions',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey[800],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '1. Location Access: We require access to your location to provide real-time updates and accurate incident reporting. Your location data will only be used for service purposes.',
+                                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '2. Camera Access: Camera access is needed for capturing images related to incidents. These images will be securely stored and used solely for service enhancement.',
+                                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '3. Privacy: Your data is protected under our Privacy Policy. We ensure that your personal information is handled with the utmost care.',
+                                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '4. Agreement: By proceeding, you agree to our Terms and Conditions and Privacy Policy.',
+                                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          const SizedBox(height: 10),
                         ],
                       ),
                     ).animate().fadeIn().slideY(
