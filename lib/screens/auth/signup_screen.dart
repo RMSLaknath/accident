@@ -323,7 +323,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             },
                             child: Text(
                               _showFullTerms ? 'Hide Terms and Conditions' : 'View Terms and Conditions',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: Colors.blue,
                                 decoration: TextDecoration.underline,

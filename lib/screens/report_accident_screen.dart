@@ -15,12 +15,17 @@ class ReportAccidentScreen extends StatefulWidget {
   _ReportAccidentScreenState createState() => _ReportAccidentScreenState();
 }
 
-class _ReportAccidentScreenState extends State<ReportAccidentScreen> {
+class _ReportAccidentScreenState extends State<ReportAccidentScreen> with SingleTickerProviderStateMixin {
   GoogleMapController? mapController;
   static const LatLng _center = LatLng(6.927079, 79.861244);
   LatLng _currentLocation = _center;
   final Set<Marker> _markers = {};
   XFile? _selectedImage;
+  
+  // Animation controller for UI elements
+  late AnimationController _animationController;
+  // Fix: Initialize the animation with a default value instead of using late
+  Animation<double> _fadeAnimation = const AlwaysStoppedAnimation<double>(1.0);
 
   // Add a variable to track upload progress
   double _uploadProgress = 0.0;
@@ -29,7 +34,33 @@ class _ReportAccidentScreenState extends State<ReportAccidentScreen> {
   @override
   void initState() {
     super.initState();
+    _initAnimations();
     _getCurrentLocation();
+  }
+
+  // Separate method to initialize animations to improve readability and organization
+  void _initAnimations() {
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeOut,
+      ),
+    );
+    
+    // Start the animation
+    _animationController.forward();
+  }
+  
+  @override
+  void dispose() {
+    _animationController.dispose();
+    mapController?.dispose();
+    super.dispose();
   }
 
   Future<void> _getCurrentLocation() async {
@@ -84,7 +115,7 @@ class _ReportAccidentScreenState extends State<ReportAccidentScreen> {
     }
   }
 
-  // Add method to show success dialog
+  // Modify the success dialog for better UI
   void _showSuccessDialog() {
     showDialog(
       context: context,
@@ -92,30 +123,38 @@ class _ReportAccidentScreenState extends State<ReportAccidentScreen> {
       builder: (BuildContext context) {
         return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
           ),
+          elevation: 8,
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(28.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade100,
+                    color: Colors.green.shade50,
                     shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.green.withOpacity(0.2),
+                        blurRadius: 12,
+                        spreadRadius: 2,
+                      ),
+                    ],
                   ),
                   child: Icon(
                     Icons.check_circle,
-                    size: 64,
+                    size: 72,
                     color: Colors.green.shade600,
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
                 const Text(
                   'Accident Reported Successfully!',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
@@ -124,22 +163,35 @@ class _ReportAccidentScreenState extends State<ReportAccidentScreen> {
                 const Text(
                   'Your accident report has been submitted along with the location and photo evidence.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.black54),
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 15,
+                    height: 1.4,
+                  ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
                 SizedBox(
                   width: double.infinity,
+                  height: 50,
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      elevation: 2,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
                     ),
-                    child: const Text('OK'),
+                    child: const Text(
+                      'DONE',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -365,27 +417,45 @@ class _ReportAccidentScreenState extends State<ReportAccidentScreen> {
     }
   }
 
-  // Add this method to show confirmation dialog
+  // Improve confirmation dialog
   Future<bool> _showConfirmationDialog() async {
     return await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
           ),
           title: Row(
             children: [
-              Icon(
-                Icons.warning_amber_rounded,
-                color: Theme.of(context).colorScheme.primary,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.warning_amber_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
-              const SizedBox(width: 10),
-              const Text('Confirm Report'),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Text(
+                  'Confirm Report',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ],
           ),
           content: const Text(
             'Are you sure you want to report an accident at this location? This will capture a photo and share your current location.',
+            style: TextStyle(
+              height: 1.5,
+              fontSize: 15,
+            ),
           ),
           actions: [
             TextButton(
@@ -397,11 +467,15 @@ class _ReportAccidentScreenState extends State<ReportAccidentScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
               child: const Text('CONFIRM'),
             ),
           ],
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         );
       },
     ) ?? false; // Return false if dialog is dismissed
@@ -410,19 +484,59 @@ class _ReportAccidentScreenState extends State<ReportAccidentScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final size = MediaQuery.of(context).size;
     
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text(
           'Report Accident',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            shadows: [
+              Shadow(
+                blurRadius: 5.0,
+                color: Colors.black38,
+                offset: Offset(0, 1),
+              ),
+            ],
+          ),
         ),
-        backgroundColor: theme.colorScheme.surface,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.8),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black87),
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.8),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.history, color: Colors.black87),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AccidentHistoryScreen(),
+                  ),
+                );
+              },
+              tooltip: 'View History',
+            ),
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -433,7 +547,7 @@ class _ReportAccidentScreenState extends State<ReportAccidentScreen> {
             },
             initialCameraPosition: const CameraPosition(
               target: _center,
-              zoom: 11.0,
+              zoom: 12.0,
             ),
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
@@ -442,163 +556,240 @@ class _ReportAccidentScreenState extends State<ReportAccidentScreen> {
             markers: _markers,
           ),
           
-          // Top Panel with helpful info
-          Positioned(
-            top: 20,
-            left: 20,
-            right: 20,
-            child: Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+          // Semi-transparent overlay at the top for contrast
+          Container(
+            height: 120,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.5),
+                  Colors.transparent,
+                ],
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: theme.colorScheme.primary,
+            ),
+          ),
+          
+          // Top Panel with helpful info - using FadeTransition for animation
+          FadeTransition(
+            opacity: _fadeAnimation,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 100, 20, 0),
+              child: Card(
+                elevation: 6,
+                shadowColor: Colors.black26,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(16.0),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        theme.colorScheme.primary.withOpacity(0.9),
+                        theme.colorScheme.primary.withOpacity(0.7),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Tap "Report Accident" to capture and upload a photo of the accident.',
-                        style: TextStyle(fontSize: 14),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.info_outline,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Text(
+                          'Tap "Report Accident" to capture and upload a photo of the accident.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
           
-          // Action Buttons Column
+          // Action Buttons Column with SlideTransition
           Positioned(
-            bottom: 100,
+            bottom: 120,
             right: 20,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                _buildFloatingButton(
-                  context: context,
-                  icon: Icons.history,
-                  backgroundColor: theme.colorScheme.secondary,
-                  iconColor: Colors.white,
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AccidentHistoryScreen(),
-                      ),
-                    );
-                  },
-                  tooltip: 'View Accident History',
-                  heroTag: 'history_button',
-                ),
-                const SizedBox(height: 16),
-                _buildFloatingButton(
-                  context: context,
-                  icon: Icons.warning_amber_rounded,
-                  backgroundColor: Colors.red.shade700,
-                  iconColor: Colors.white,
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('SOS Alert Sent!'),
-                        backgroundColor: Colors.red,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
-                  tooltip: 'SOS Emergency',
-                  heroTag: 'sos_button',
-                ),
-                const SizedBox(height: 16),
-                _buildFloatingButton(
-                  context: context,
-                  icon: Icons.my_location,
-                  backgroundColor: Colors.white,
-                  iconColor: theme.colorScheme.secondary,
-                  onPressed: _getCurrentLocation,
-                  tooltip: 'My Location',
-                  heroTag: 'location_button',
-                ),
-              ],
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  _buildFloatingButton(
+                    context: context,
+                    icon: Icons.warning_amber_rounded,
+                    backgroundColor: Colors.red.shade700,
+                    iconColor: Colors.white,
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Row(
+                            children: [
+                              Icon(Icons.error_outline, color: Colors.white),
+                              SizedBox(width: 10),
+                              Text('SOS Alert Sent!'),
+                            ],
+                          ),
+                          backgroundColor: Colors.red.shade700,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          margin: EdgeInsets.only(
+                            bottom: size.height * 0.1,
+                            left: 20,
+                            right: 20,
+                          ),
+                        ),
+                      );
+                    },
+                    tooltip: 'SOS Emergency',
+                    heroTag: 'sos_button',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFloatingButton(
+                    context: context,
+                    icon: Icons.my_location,
+                    backgroundColor: Colors.white,
+                    iconColor: theme.colorScheme.secondary,
+                    onPressed: _getCurrentLocation,
+                    tooltip: 'My Location',
+                    heroTag: 'location_button',
+                  ),
+                ],
+              ),
             ),
           ),
           
-          // Bottom Panel with Report Button
+          // Bottom Panel with Report Button - using SlideTransition for animation
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(28),
+                    topRight: Radius.circular(28),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 15,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Report an Accident',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Take a photo and share your current location',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        print('Report Accident button clicked.');
-                        // Show confirmation dialog before proceeding
-                        final confirmed = await _showConfirmationDialog();
-                        if (confirmed) {
-                          await _pickImage();
-                          await _uploadImage();
-                        }
-                      },
-                      icon: const Icon(Icons.camera_alt),
-                      label: const Text(
-                        'REPORT ACCIDENT',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 36),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.camera_alt,
+                            color: theme.colorScheme.primary,
+                            size: 24,
+                          ),
                         ),
-                        elevation: 4,
+                        const SizedBox(width: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Report an Accident',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Take a photo and share your location',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          print('Report Accident button clicked.');
+                          // Show confirmation dialog before proceeding
+                          final confirmed = await _showConfirmationDialog();
+                          if (confirmed) {
+                            await _pickImage();
+                            await _uploadImage();
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 4,
+                          shadowColor: theme.colorScheme.primary.withOpacity(0.4),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.camera_alt, size: 24),
+                            SizedBox(width: 12),
+                            Text(
+                              'REPORT ACCIDENT',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                letterSpacing: 1.1,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -617,27 +808,36 @@ class _ReportAccidentScreenState extends State<ReportAccidentScreen> {
     required String heroTag,
   }) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: backgroundColor.withOpacity(0.4),
             blurRadius: 8,
             offset: const Offset(0, 4),
+            spreadRadius: 1,
           ),
         ],
       ),
       child: Tooltip(
         message: tooltip,
-        child: FloatingActionButton(
-          onPressed: onPressed,
-          backgroundColor: backgroundColor,
+        child: Material(
+          color: backgroundColor,
           elevation: 0,
-          heroTag: heroTag,
-          child: Icon(
-            icon,
-            color: iconColor,
-            size: 28,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onPressed,
+            child: SizedBox(
+              width: 56,
+              height: 56,
+              child: Icon(
+                icon,
+                color: iconColor,
+                size: 28,
+              ),
+            ),
           ),
         ),
       ),

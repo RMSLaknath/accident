@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 
 class EditProfileScreen extends StatefulWidget {
   final String currentName;
   final String currentPhone;
+  final String? currentProfileImageUrl;
 
   const EditProfileScreen({
     super.key, 
     required this.currentName,
     required this.currentPhone,
+    this.currentProfileImageUrl,
   });
 
   @override
@@ -21,12 +26,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   bool _isLoading = false;
+  bool _isUploadingImage = false;
+  String? _profileImageUrl;
+  File? _profileImageFile;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.currentName);
     _phoneController = TextEditingController(text: widget.currentPhone);
+    _profileImageUrl = widget.currentProfileImageUrl;
   }
 
   @override
@@ -34,6 +43,65 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameController.dispose();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    
+    try {
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 75,
+      );
+
+      if (image == null) return;
+
+      setState(() {
+        _profileImageFile = File(image.path);
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error selecting image: $e')),
+      );
+    }
+  }
+
+  Future<String?> _uploadProfileImage() async {
+    if (_profileImageFile == null) return _profileImageUrl;
+    
+    setState(() => _isUploadingImage = true);
+    
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return null;
+      
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('profile_pictures/${user.uid}.jpg');
+      
+      final uploadTask = storageRef.putFile(_profileImageFile!);
+      
+      // Track upload progress
+      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+        print('Upload progress: ${snapshot.bytesTransferred}/${snapshot.totalBytes}');
+      });
+      
+      await uploadTask;
+      
+      final downloadUrl = await storageRef.getDownloadURL();
+      setState(() => _isUploadingImage = false);
+      
+      return downloadUrl;
+    } catch (e) {
+      print('Error uploading profile image: $e');
+      setState(() => _isUploadingImage = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error uploading profile image: $e')),
+      );
+      return null;
+    }
   }
 
   Future<void> _updateProfile() async {
@@ -44,10 +112,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+        // Upload profile image if selected
+        String? imageUrl = _profileImageUrl;
+        if (_profileImageFile != null) {
+          imageUrl = await _uploadProfileImage();
+        }
+        
+        // Create update data map
+        final Map<String, dynamic> updateData = {
           'name': _nameController.text.trim(),
           'phone': _phoneController.text.trim(),
-        });
+        };
+        
+        // Add profile image URL if available
+        if (imageUrl != null) {
+          updateData['profileImageUrl'] = imageUrl;
+        }
+        
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update(updateData);
         
         if (mounted) {
           Navigator.pop(context, true); // Return true to indicate success
@@ -87,6 +172,100 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Add profile image section
+                Center(
+                  child: Column(
+                    children: [
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: Stack(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: _isUploadingImage
+                                  ? CircleAvatar(
+                                      radius: 60,
+                                      backgroundColor: Colors.grey[200],
+                                      child: const CircularProgressIndicator(),
+                                    )
+                                  : CircleAvatar(
+                                      radius: 60,
+                                      backgroundColor: Colors.grey[200],
+                                      backgroundImage: _profileImageFile != null
+                                          ? FileImage(_profileImageFile!)
+                                          : (_profileImageUrl != null && _profileImageUrl!.isNotEmpty
+                                              ? NetworkImage(_profileImageUrl!) as ImageProvider
+                                              : null),
+                                      child: (_profileImageFile == null && 
+                                             (_profileImageUrl == null || _profileImageUrl!.isEmpty))
+                                          ? Text(
+                                              widget.currentName.isNotEmpty 
+                                                  ? widget.currentName[0].toUpperCase() 
+                                                  : '?',
+                                              style: TextStyle(
+                                                fontSize: 50,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.blue[700],
+                                              ),
+                                            )
+                                          : null,
+                                    ),
+                            ),
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue[700],
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Tap to change profile picture',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
                 const Text(
                   'Personal Information',
                   style: TextStyle(
@@ -124,7 +303,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 // Updated Save Changes Button
                 Container(
                   width: double.infinity,
-                  height: 55, // Increased height
+                  height: 55,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
@@ -172,7 +351,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                   ),
                 ),
-                const SizedBox(height: 20), // Added bottom spacing
+                const SizedBox(height: 20),
               ],
             ),
           ),

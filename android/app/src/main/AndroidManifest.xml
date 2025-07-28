@@ -1,7 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Existing permissions -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    
+    <!-- Add this critical permission for making phone calls -->
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    
+    <!-- Rest of manifest... -->
     <application
         android:label="accident"
         android:name="${applicationName}"
@@ -35,7 +41,7 @@
             android:value="2" />
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyDxZq74_kDlP7lhHsyVm8Jk1FK9pMNSFE0"/>
+            android:value="AIzaSyCo0dM6GzeOCPCcx5DMLM3a6Pq3K-7DVd8"/>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
